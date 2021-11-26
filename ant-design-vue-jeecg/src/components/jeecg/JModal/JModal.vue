@@ -47,10 +47,10 @@
 
 <script>
 
-  import { getClass, getStyle } from '@/utils/props-util'
-  import { triggerWindowResizeEvent } from '@/utils/util'
+import { getClass, getStyle } from '@/utils/props-util'
+import { triggerWindowResizeEvent } from '@/utils/util'
 
-  export default {
+export default {
     name: 'JModal',
     props: {
       title: String,
@@ -169,6 +169,7 @@
 </script>
 
 <style lang="less">
+  
   .j-modal-box {
     &.fullscreen {
       top: 0;

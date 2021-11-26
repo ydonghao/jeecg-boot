@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.jeecg.common.api.vo.Result;
@@ -71,8 +72,13 @@ public class SysDepartController {
 		LoginUser user = (LoginUser) SecurityUtils.getSubject().getPrincipal();
 		try {
 			if(oConvertUtils.isNotEmpty(user.getUserIdentity()) && user.getUserIdentity().equals( CommonConstant.USER_IDENTITY_2 )){
-				List<SysDepartTreeModel> list = sysDepartService.queryMyDeptTreeList(user.getDepartIds());
-				result.setResult(list);
+				//update-begin--Author:liusq  Date:20210624  for:部门查询ids为空后的前端显示问题 issues/I3UD06
+				String departIds = user.getDepartIds();
+				if(StringUtils.isNotBlank(departIds)){
+					List<SysDepartTreeModel> list = sysDepartService.queryMyDeptTreeList(departIds);
+					result.setResult(list);
+				}
+				//update-end--Author:liusq  Date:20210624  for:部门查询ids为空后的前端显示问题 issues/I3UD06
 				result.setMessage(CommonConstant.USER_IDENTITY_2.toString());
 				result.setSuccess(true);
 			}else{
@@ -91,7 +97,7 @@ public class SysDepartController {
 	 * @return
 	 */
 	@RequestMapping(value = "/queryTreeList", method = RequestMethod.GET)
-	public Result<List<SysDepartTreeModel>> queryTreeList() {
+	public Result<List<SysDepartTreeModel>> queryTreeList(@RequestParam(name = "ids", required = false) String ids) {
 		Result<List<SysDepartTreeModel>> result = new Result<>();
 		try {
 			// 从内存中读取
@@ -99,8 +105,13 @@ public class SysDepartController {
 //			if (CollectionUtils.isEmpty(list)) {
 //				list = sysDepartService.queryTreeList();
 //			}
-			List<SysDepartTreeModel> list = sysDepartService.queryTreeList();
-			result.setResult(list);
+			if(oConvertUtils.isNotEmpty(ids)){
+				List<SysDepartTreeModel> departList = sysDepartService.queryTreeList(ids);
+				result.setResult(departList);
+			}else{
+				List<SysDepartTreeModel> list = sysDepartService.queryTreeList();
+				result.setResult(list);
+			}
 			result.setSuccess(true);
 		} catch (Exception e) {
 			log.error(e.getMessage(),e);
@@ -110,14 +121,15 @@ public class SysDepartController {
 
 	/**
 	 * 异步查询部门list
-	 *
+	 * @param parentId 父节点 异步加载时传递
+	 * @param ids 前端回显是传递
 	 * @return
 	 */
 	@RequestMapping(value = "/queryDepartTreeSync", method = RequestMethod.GET)
-	public Result<List<SysDepartTreeModel>> queryDepartTreeSync(@RequestParam(name = "pid", required = false) String parentId) {
+	public Result<List<SysDepartTreeModel>> queryDepartTreeSync(@RequestParam(name = "pid", required = false) String parentId,@RequestParam(name = "ids", required = false) String ids) {
 		Result<List<SysDepartTreeModel>> result = new Result<>();
 		try {
-			List<SysDepartTreeModel> list = sysDepartService.queryTreeListByPid(parentId);
+			List<SysDepartTreeModel> list = sysDepartService.queryTreeListByPid(parentId,ids);
 			result.setResult(list);
 			result.setSuccess(true);
 		} catch (Exception e) {

@@ -1,9 +1,17 @@
 package org.jeecg.common.system.query;
 
-import com.alibaba.fastjson.JSON;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import lombok.extern.slf4j.Slf4j;
+import java.beans.PropertyDescriptor;
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.net.URLDecoder;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
 import org.apache.commons.beanutils.PropertyUtils;
 import org.jeecg.common.constant.CommonConstant;
 import org.jeecg.common.constant.DataBaseConstant;
@@ -16,17 +24,12 @@ import org.jeecg.common.util.SqlInjectionUtil;
 import org.jeecg.common.util.oConvertUtils;
 import org.springframework.util.NumberUtils;
 
-import java.beans.PropertyDescriptor;
-import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.net.URLDecoder;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.annotation.DbType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class QueryGenerator {
@@ -96,7 +99,7 @@ public class QueryGenerator {
 	 * <br>正确示例:QueryWrapper<JeecgDemo> queryWrapper = new QueryWrapper<JeecgDemo>();
 	 * <br>3.也可以不使用这个方法直接调用 {@link #initQueryWrapper}直接获取实例
 	 */
-	public static void installMplus(QueryWrapper<?> queryWrapper,Object searchObj,Map<String, String[]> parameterMap) {
+	private static void installMplus(QueryWrapper<?> queryWrapper,Object searchObj,Map<String, String[]> parameterMap) {
 		
 		/*
 		 * 注意:权限查询由前端配置数据规则 当一个人有多个所属部门时候 可以在规则配置包含条件 orgCode 包含 #{sys_org_code}
@@ -213,7 +216,7 @@ public class QueryGenerator {
 	}
 	
 	//多字段排序 TODO 需要修改前端
-	public static void doMultiFieldsOrder(QueryWrapper<?> queryWrapper,Map<String, String[]> parameterMap) {
+	private static void doMultiFieldsOrder(QueryWrapper<?> queryWrapper,Map<String, String[]> parameterMap) {
 		String column=null,order=null;
 		if(parameterMap!=null&& parameterMap.containsKey(ORDER_COLUMN)) {
 			column = parameterMap.get(ORDER_COLUMN)[0];
@@ -238,12 +241,12 @@ public class QueryGenerator {
 				//queryWrapper.orderByAsc(oConvertUtils.camelToUnderline(column));
 				String columnStr = oConvertUtils.camelToUnderline(column);
 				String[] columnArray = columnStr.split(",");
-				queryWrapper.orderByAsc(columnArray);
+				queryWrapper.orderByAsc(Arrays.asList(columnArray));
 			} else {
 				//queryWrapper.orderByDesc(oConvertUtils.camelToUnderline(column));
 				String columnStr = oConvertUtils.camelToUnderline(column);
 				String[] columnArray = columnStr.split(",");
-				queryWrapper.orderByDesc(columnArray);
+				queryWrapper.orderByDesc(Arrays.asList(columnArray));
 			}
 			//update-end--Author:scott  Date:20210531 for：36 多条件排序无效问题修正-------
 		}
@@ -255,7 +258,7 @@ public class QueryGenerator {
 	 * @param parameterMap 参数对象
 	 * @param fieldColumnMap 实体字段和数据库列对应的map
 	 */
-	public static void doSuperQuery(QueryWrapper<?> queryWrapper,Map<String, String[]> parameterMap, Map<String,String> fieldColumnMap) {
+	private static void doSuperQuery(QueryWrapper<?> queryWrapper,Map<String, String[]> parameterMap, Map<String,String> fieldColumnMap) {
 		if(parameterMap!=null&& parameterMap.containsKey(SUPER_QUERY_PARAMS)){
 			String superQueryParams = parameterMap.get(SUPER_QUERY_PARAMS)[0];
 			String superQueryMatchType = parameterMap.get(SUPER_QUERY_MATCH_TYPE) != null ? parameterMap.get(SUPER_QUERY_MATCH_TYPE)[0] : MatchTypeEnum.AND.getValue();
@@ -284,6 +287,39 @@ public class QueryGenerator {
 							}else if("datetime".equals(rule.getType())){
 								queryValue = DateUtils.str2Date(rule.getVal(), DateUtils.datetimeFormat.get());
 							}
+							// update-begin--author:sunjianlei date:20210702 for：【/issues/I3VR8E】高级查询没有类型转换，查询参数都是字符串类型 ----
+							String dbType = rule.getDbType();
+							if (oConvertUtils.isNotEmpty(dbType)) {
+								try {
+									String valueStr = String.valueOf(queryValue);
+									switch (dbType.toLowerCase().trim()) {
+										case "int":
+											queryValue = Integer.parseInt(valueStr);
+											break;
+										case "bigdecimal":
+											queryValue = new BigDecimal(valueStr);
+											break;
+										case "short":
+											queryValue = Short.parseShort(valueStr);
+											break;
+										case "long":
+											queryValue = Long.parseLong(valueStr);
+											break;
+										case "float":
+											queryValue = Float.parseFloat(valueStr);
+											break;
+										case "double":
+											queryValue = Double.parseDouble(valueStr);
+											break;
+										case "boolean":
+											queryValue = Boolean.parseBoolean(valueStr);
+											break;
+									}
+								} catch (Exception e) {
+									log.error("高级查询值转换失败：", e);
+								}
+							}
+							// update-begin--author:sunjianlei date:20210702 for：【/issues/I3VR8E】高级查询没有类型转换，查询参数都是字符串类型 ----
                             addEasyQuery(andWrapper, fieldColumnMap.get(rule.getField()), QueryRuleEnum.getByValue(rule.getRule()), queryValue);
 							//update-end-author:taoyan date:20201228 for: 【高级查询】 oracle 日期等于查询报错
 
@@ -311,15 +347,17 @@ public class QueryGenerator {
 	 * @param value
 	 * @return
 	 */
-	private static QueryRuleEnum convert2Rule(Object value) {
+	public static QueryRuleEnum convert2Rule(Object value) {
 		// 避免空数据
+		// update-begin-author:taoyan date:20210629 for: 查询条件输入空格导致return null后续判断导致抛出null异常
 		if (value == null) {
-			return null;
+			return QueryRuleEnum.EQ;
 		}
 		String val = (value + "").toString().trim();
 		if (val.length() == 0) {
-			return null;
+			return QueryRuleEnum.EQ;
 		}
+		// update-end-author:taoyan date:20210629 for: 查询条件输入空格导致return null后续判断导致抛出null异常
 		QueryRuleEnum rule =null;
 
 		//update-begin--Author:scott  Date:20190724 for：initQueryWrapper组装sql查询条件错误 #284-------------------
@@ -557,36 +595,12 @@ public class QueryGenerator {
 	
 
 	/**
-	 * 获取请求对应的数据权限规则
+	 * 获取请求对应的数据权限规则 TODO 相同列权限多个 有问题
 	 * @return
 	 */
 	public static Map<String, SysPermissionDataRuleModel> getRuleMap() {
 		Map<String, SysPermissionDataRuleModel> ruleMap = new HashMap<String, SysPermissionDataRuleModel>();
 		List<SysPermissionDataRuleModel> list =JeecgDataAutorUtils.loadDataSearchConditon();
-		if(list != null&&list.size()>0){
-			if(list.get(0)==null){
-				return ruleMap;
-			}
-			for (SysPermissionDataRuleModel rule : list) {
-				String column = rule.getRuleColumn();
-				if(QueryRuleEnum.SQL_RULES.getValue().equals(rule.getRuleConditions())) {
-					column = SQL_RULES_COLUMN+rule.getId();
-				}
-				ruleMap.put(column, rule);
-			}
-		}
-		return ruleMap;
-	}
-
-	/**
-	 * 获取请求对应的数据权限规则
-	 * @return
-	 */
-	public static Map<String, SysPermissionDataRuleModel> getRuleMap(List<SysPermissionDataRuleModel> list) {
-		Map<String, SysPermissionDataRuleModel> ruleMap = new HashMap<String, SysPermissionDataRuleModel>();
-		if(list==null){
-			list =JeecgDataAutorUtils.loadDataSearchConditon();
-		}
 		if(list != null&&list.size()>0){
 			if(list.get(0)==null){
 				return ruleMap;
@@ -723,7 +737,7 @@ public class QueryGenerator {
 	 * @param dataBaseType
 	 * @return
 	 */
-	public static String getSingleSqlByRule(QueryRuleEnum rule,String field,Object value,boolean isString, String dataBaseType) {
+	private static String getSingleSqlByRule(QueryRuleEnum rule,String field,Object value,boolean isString, String dataBaseType) {
 		String res = "";
 		switch (rule) {
 		case GT:
@@ -775,7 +789,7 @@ public class QueryGenerator {
 	 * @param isString
 	 * @return
 	 */
-	public static String getSingleSqlByRule(QueryRuleEnum rule,String field,Object value,boolean isString) {
+	private static String getSingleSqlByRule(QueryRuleEnum rule,String field,Object value,boolean isString) {
 		return getSingleSqlByRule(rule, field, value, isString, null);
 	}
 
@@ -820,20 +834,25 @@ public class QueryGenerator {
 	}
 
 	private static String getInConditionValue(Object value,boolean isString) {
+		//update-begin-author:taoyan date:20210628 for: 查询条件如果输入,导致sql报错
+		String[] temp = value.toString().split(",");
+		if(temp.length==0){
+			return "('')";
+		}
 		if(isString) {
-			String temp[] = value.toString().split(",");
-			String res="";
+			List<String> res = new ArrayList<>();
 			for (String string : temp) {
 				if(DataBaseConstant.DB_TYPE_SQLSERVER.equals(getDbType())){
-					res+=",N'"+string+"'";
+					res.add("N'"+string+"'");
 				}else{
-					res+=",'"+string+"'";
+					res.add("'"+string+"'");
 				}
 			}
-			return "("+res.substring(1)+")";
+			return "("+String.join("," ,res)+")";
 		}else {
 			return "("+value.toString()+")";
 		}
+		//update-end-author:taoyan date:20210628 for: 查询条件如果输入,导致sql报错
 	}
 	
 	private static String getLikeConditionValue(Object value) {
@@ -1003,8 +1022,6 @@ public class QueryGenerator {
 
 
 
-	/** 当前系统数据库类型 */
-	private static String DB_TYPE;
 	/**
 	 * 获取系统数据库类型
 	 */

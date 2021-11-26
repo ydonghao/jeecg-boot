@@ -9,6 +9,7 @@ import com.aliyun.oss.model.PutObjectResult;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.http.fileupload.FileItemStream;
 import org.jeecg.common.util.CommonUtils;
+import org.jeecg.common.util.filter.FileTypeFilter;
 import org.jeecg.common.util.filter.StrAttackFilter;
 import org.jeecg.common.util.oConvertUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -110,6 +111,9 @@ public class OssBootUtil {
             if("" == orgName){
               orgName=file.getName();
             }
+            //update-begin-author:liusq date:20210809 for: 过滤上传文件类型
+            FileTypeFilter.fileTypeFilter(file);
+            //update-end-author:liusq date:20210809 for: 过滤上传文件类型
             orgName = CommonUtils.getFileName(orgName);
             String fileName = orgName.indexOf(".")==-1
                               ?orgName + "_" + System.currentTimeMillis()
@@ -136,6 +140,9 @@ public class OssBootUtil {
         } catch (IOException e) {
             e.printStackTrace();
             return null;
+        }catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
         return FILE_URL;
     }
@@ -147,7 +154,7 @@ public class OssBootUtil {
     */
     public static String getOriginalUrl(String url) {
         String originalDomain = "https://" + bucketName + "." + endPoint;
-        if(url.indexOf(staticDomain)!=-1){
+        if(oConvertUtils.isNotEmpty(staticDomain) && url.indexOf(staticDomain)!=-1){
             url = url.replace(staticDomain,originalDomain);
         }
         return url;

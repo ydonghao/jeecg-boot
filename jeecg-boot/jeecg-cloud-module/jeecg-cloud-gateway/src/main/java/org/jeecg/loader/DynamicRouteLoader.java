@@ -11,6 +11,8 @@ import com.alibaba.nacos.api.exception.NacosException;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ObjectUtils;
+import org.jeecg.common.base.BaseMap;
 import org.jeecg.common.constant.CacheConstant;
 import org.jeecg.common.util.RedisUtil;
 import org.jeecg.config.GatewayRoutersConfiguration;
@@ -66,6 +68,9 @@ public class DynamicRouteLoader implements ApplicationEventPublisherAware {
 
     @PostConstruct
     public void init() {
+       init(null);
+    }
+    public void init(BaseMap baseMap) {
         String dataType = GatewayRoutersConfiguration.DATA_TYPE;
         log.info("初始化路由，dataType："+ dataType);
         if (RouterDataType.nacos.toString().endsWith(dataType)) {
@@ -73,20 +78,18 @@ public class DynamicRouteLoader implements ApplicationEventPublisherAware {
         }
         //从数据库加载路由
         if (RouterDataType.database.toString().endsWith(dataType)) {
-            loadRoutesByRedis();
+            loadRoutesByRedis(baseMap);
         }
     }
-
-
     /**
      * 刷新路由
      *
      * @return
      */
-    public Mono<Void> refresh() {
+    public Mono<Void> refresh(BaseMap baseMap) {
         String dataType = GatewayRoutersConfiguration.DATA_TYPE;
         if (!RouterDataType.yml.toString().endsWith(dataType)) {
-            this.init();
+            this.init(baseMap);
         }
         return Mono.empty();
     }
@@ -127,8 +130,8 @@ public class DynamicRouteLoader implements ApplicationEventPublisherAware {
      *
      * @return
      */
-    private void loadRoutesByRedis() {
-        List<RouteDefinition> routes = Lists.newArrayList();
+    private void loadRoutesByRedis(BaseMap baseMap) {
+        List<MyRouteDefinition> routes = Lists.newArrayList();
         configService = createConfigService();
         if (configService == null) {
             log.warn("initConfigService fail");
@@ -143,9 +146,20 @@ public class DynamicRouteLoader implements ApplicationEventPublisherAware {
                 e.printStackTrace();
             }
         }
-        for (RouteDefinition definition : routes) {
+        for (MyRouteDefinition definition : routes) {
             log.info("update route : {}", definition.toString());
-            dynamicRouteService.add(definition);
+            Integer status=definition.getStatus();
+            if(status.equals(0)){
+                dynamicRouteService.delete(definition.getId());
+            }else{
+                dynamicRouteService.add(definition);
+            }
+        }
+        if(ObjectUtils.isNotEmpty(baseMap)){
+            String routerId=baseMap.get("routerId");
+            if(ObjectUtils.isNotEmpty(routerId)) {
+                dynamicRouteService.delete(routerId);
+            }
         }
         this.publisher.publishEvent(new RefreshRoutesEvent(this));
     }
@@ -161,12 +175,13 @@ public class DynamicRouteLoader implements ApplicationEventPublisherAware {
      * @return
      */
 
-    public static List<RouteDefinition> getRoutesByJson(JSONArray array) throws URISyntaxException {
-        List<RouteDefinition> ls = new ArrayList<>();
+    public static List<MyRouteDefinition> getRoutesByJson(JSONArray array) throws URISyntaxException {
+        List<MyRouteDefinition> ls = new ArrayList<>();
         for (int i = 0; i < array.size(); i++) {
             JSONObject obj = array.getJSONObject(i);
-            RouteDefinition route = new RouteDefinition();
+            MyRouteDefinition route = new MyRouteDefinition();
             route.setId(obj.getString("routerId"));
+            route.setStatus(obj.getInteger("status"));
             Object uri = obj.get("uri");
             if (uri == null) {
                 route.setUri(new URI("lb://" + obj.getString("name")));
@@ -271,8 +286,8 @@ public class DynamicRouteLoader implements ApplicationEventPublisherAware {
                 @Override
                 public void receiveConfigInfo(String configInfo) {
                     log.info("进行网关更新:\n\r{}", configInfo);
-                    List<RouteDefinition> definitionList = JSON.parseArray(configInfo, RouteDefinition.class);
-                    for (RouteDefinition definition : definitionList) {
+                    List<MyRouteDefinition> definitionList = JSON.parseArray(configInfo, MyRouteDefinition.class);
+                    for (MyRouteDefinition definition : definitionList) {
                         log.info("update route : {}", definition.toString());
                         dynamicRouteService.update(definition);
                     }

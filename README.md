@@ -1,18 +1,19 @@
 
 
-![JEECG](https://static.oschina.net/uploads/img/201905/24164523_XDhg.png "JeecgBoot低代码开发平台")
+![JEECG](https://jeecgos.oss-cn-beijing.aliyuncs.com/files/site/jeecgfengm.png "JeecgBoot低代码开发平台")
 
 
 
 JEECG BOOT 低代码开发平台（前后端分离版本）
 ===============
 
-当前最新版本： 2.4.5（发布日期：2021-06-07）
+当前最新版本： 3.0（发布日期：2021-11-01）
 
 
 [![AUR](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](https://github.com/zhangdaiscott/jeecg-boot/blob/master/LICENSE)
 [![](https://img.shields.io/badge/Author-北京国炬软件-orange.svg)](http://www.jeecg.com)
-[![](https://img.shields.io/badge/version-2.4.5-brightgreen.svg)](https://github.com/zhangdaiscott/jeecg-boot)
+[![](https://img.shields.io/badge/Blog-官方博客-blue.svg)](https://jeecg.blog.csdn.net)
+[![](https://img.shields.io/badge/version-3.0-brightgreen.svg)](https://github.com/zhangdaiscott/jeecg-boot)
 [![GitHub stars](https://img.shields.io/github/stars/zhangdaiscott/jeecg-boot.svg?style=social&label=Stars)](https://github.com/zhangdaiscott/jeecg-boot)
 [![GitHub forks](https://img.shields.io/github/forks/zhangdaiscott/jeecg-boot.svg?style=social&label=Fork)](https://github.com/zhangdaiscott/jeecg-boot)
 
@@ -44,13 +45,15 @@ Jeecg-Boot低代码开发平台，可以应用在任何J2EE项目的开发中，
 
 - 技术官网：  [http://www.jeecg.com](http://www.jeecg.com)
 
-- 开发文档：  [http://doc.jeecg.com](http://doc.jeecg.com)
-
-- 微服务启动：  [单体升级为微服务启动文档2.4+](http://doc.jeecg.com/2043906)
-
 - 在线演示 ： [http://boot.jeecg.com](http://boot.jeecg.com)
 
+- 在线演示(VUE3beta版)：[http://boot3.jeecg.com](http://boot3.jeecg.com)
+
+- 开发文档：  [http://doc.jeecg.com](http://doc.jeecg.com)
+
 - 视频教程  ：[JeecgBoot入门视频](http://www.jeecg.com/doc/video)
+
+- 微服务启动：  [单体升级为微服务启动文档2.4+](http://doc.jeecg.com/2043906)
 
 - 常见问题：  [入门常见问题Q&A](http://jeecg.com/doc/qa)
 
@@ -61,13 +64,13 @@ Jeecg-Boot低代码开发平台，可以应用在任何J2EE项目的开发中，
 交流互动
 -----------------------------------
 
-- QQ交流群 ：  ③816531124、②769925425（满）、①284271917（满）
+- QQ交流群 ： ⑤860162132、④774126647(满)、③816531124(满)、②769925425(满)、①284271917(满)
 
 - 反馈问题：  [反馈问题，请按格式发Issues](https://github.com/zhangdaiscott/jeecg-boot/issues/new)
 
 - 参与开源：  [欢迎加入JEECG开源团队，共同进步！！](http://www.jeecg.com/doc/join)
 
-- Online一分钟：  [1分钟快速学习](https://jeecg.blog.csdn.net/article/details/106078912)
+- Online一分钟：  [1分钟快速学习](https://my.oschina.net/jeecg/blog/3083313)
 
 
 为什么选择JEECG-BOOT?
@@ -129,9 +132,23 @@ Jeecg-Boot低代码开发平台，可以应用在任何J2EE项目的开发中，
 
 - 依赖管理：Maven
 
-- 数据库：MySQL5.7+  &  Oracle 11g & Sqlserver2017
-
 - 缓存：Redis
+
+- 数据库脚本：MySQL5.7+  &  Oracle 11g & Sqlserver2017（默认只提供这三个库脚本，其他库需要自己转）
+
+|  数据库   |  支持   |
+| --- | --- |
+|   MySQL   |  √   |
+|  Oracle11g   |  √   |
+|  Sqlserver2017   |  √   |
+|   PostgreSQL   |  √   |
+|   DB2、Informix   |  √   |
+|   MariaDB   |  √   |
+|  SQLite、Hsqldb、Derby、H2   |  √   |
+|   达梦、人大金仓、神通   |  √   |
+|   华为高斯、虚谷、瀚高数据库   |  √   |
+|   阿里云PolarDB、PPAS、HerdDB   |  √   |
+|  Hive、HBase、CouchBase   |  √   |
 
 
 #### 后端
@@ -139,7 +156,9 @@ Jeecg-Boot低代码开发平台，可以应用在任何J2EE项目的开发中，
 
 - 微服务框架： Spring Cloud Alibaba 2.2.3.RELEASE
 
-- 持久层框架：Mybatis-plus 3.4.1
+- 持久层框架：Mybatis-plus 3.4.3.1、Minidao 
+
+- 报表工具： jimureport 1.3.78
 
 - 安全框架：Apache Shiro 1.7.0，Jwt 3.11.0
 
@@ -382,11 +401,11 @@ Jeecg-Boot低代码开发平台，可以应用在任何J2EE项目的开发中，
 - 拉取项目代码
 ```bash
 git clone https://github.com/zhangdaiscott/jeecg-boot.git
-cd  jeecg-boot/ant-design-jeecg-vue
+cd  jeecg-boot/ant-design-vue-jeecg
 ```
 
 1. 安装node.js
-2. 切换到ant-design-jeecg-vue文件夹下
+2. 切换到ant-design-vue-jeecg文件夹下
 ```
 # 安装yarn
 npm install -g yarn
@@ -487,9 +506,9 @@ yarn run lint
 
 - [Vue](https://cn.vuejs.org/v2/guide)
 
-- [路由/菜单说明](https://gitee.com/jeecg/jeecg-boot/tree/v1.1/ant-design-jeecg-vue/src/router/README.md)
+- [路由/菜单说明](https://gitee.com/jeecg/jeecg-boot/tree/v1.1/ant-design-vue-jeecg/src/router/README.md)
 
-- [ANTD 默认配置项](https://gitee.com/jeecg/jeecg-boot/blob/v1.1/ant-design-jeecg-vue/src/defaultSettings.js)
+- [ANTD 默认配置项](https://gitee.com/jeecg/jeecg-boot/blob/v1.1/ant-design-vue-jeecg/src/defaultSettings.js)
 
 - 其他待补充...
 

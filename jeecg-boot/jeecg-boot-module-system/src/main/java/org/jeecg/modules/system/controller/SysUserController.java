@@ -157,7 +157,7 @@ public class SysUserController {
 
     //@RequiresRoles({"admin"})
     //@RequiresPermissions("user:edit")
-	@RequestMapping(value = "/edit", method = RequestMethod.PUT)
+	@RequestMapping(value = "/edit", method = {RequestMethod.PUT,RequestMethod.POST})
 	public Result<SysUser> edit(@RequestBody JSONObject jsonObject) {
 		Result<SysUser> result = new Result<SysUser>();
 		try {
@@ -172,6 +172,10 @@ public class SysUserController {
 				user.setPassword(sysUser.getPassword());
 				String roles = jsonObject.getString("selectedroles");
                 String departs = jsonObject.getString("selecteddeparts");
+                if(oConvertUtils.isEmpty(departs)){
+                    //vue3.0前端只传递了departIds
+                    departs=user.getDepartIds();
+                }
                 // 修改用户走一个service 保证事务
 				sysUserService.editUser(user, roles, departs);
 				result.success("修改成功!");
@@ -942,42 +946,42 @@ public class SysUserController {
 		return result;
 	}
 
-	/**
-	 * 根据用户名或手机号查询用户信息
-	 * @param
-	 * @return
-	 */
-	@GetMapping("/querySysUser")
-	public Result<Map<String, Object>> querySysUser(SysUser sysUser) {
-		String phone = sysUser.getPhone();
-		String username = sysUser.getUsername();
-		Result<Map<String, Object>> result = new Result<Map<String, Object>>();
-		Map<String, Object> map = new HashMap<String, Object>();
-		if (oConvertUtils.isNotEmpty(phone)) {
-			SysUser user = sysUserService.getUserByPhone(phone);
-			if(user!=null) {
-				map.put("username",user.getUsername());
-				map.put("phone",user.getPhone());
-				result.setSuccess(true);
-				result.setResult(map);
-				return result;
-			}
-		}
-		if (oConvertUtils.isNotEmpty(username)) {
-			SysUser user = sysUserService.getUserByName(username);
-			if(user!=null) {
-				map.put("username",user.getUsername());
-				map.put("phone",user.getPhone());
-				result.setSuccess(true);
-				result.setResult(map);
-				return result;
-			}
-		}
-		result.setSuccess(false);
-		result.setMessage("验证失败");
-		return result;
-	}
-	
+//	/**
+//	 * 根据用户名或手机号查询用户信息
+//	 * @param
+//	 * @return
+//	 */
+//	@GetMapping("/querySysUser")
+//	public Result<Map<String, Object>> querySysUser(SysUser sysUser) {
+//		String phone = sysUser.getPhone();
+//		String username = sysUser.getUsername();
+//		Result<Map<String, Object>> result = new Result<Map<String, Object>>();
+//		Map<String, Object> map = new HashMap<String, Object>();
+//		if (oConvertUtils.isNotEmpty(phone)) {
+//			SysUser user = sysUserService.getUserByPhone(phone);
+//			if(user!=null) {
+//				map.put("username",user.getUsername());
+//				map.put("phone",user.getPhone());
+//				result.setSuccess(true);
+//				result.setResult(map);
+//				return result;
+//			}
+//		}
+//		if (oConvertUtils.isNotEmpty(username)) {
+//			SysUser user = sysUserService.getUserByName(username);
+//			if(user!=null) {
+//				map.put("username",user.getUsername());
+//				map.put("phone",user.getPhone());
+//				result.setSuccess(true);
+//				result.setResult(map);
+//				return result;
+//			}
+//		}
+//		result.setSuccess(false);
+//		result.setMessage("验证失败");
+//		return result;
+//	}
+
 	/**
 	 * 用户手机号验证
 	 */
@@ -1028,7 +1032,7 @@ public class SysUserController {
             result.setSuccess(false);
             return result;
         }
-        if(!smscode.equals(object)) {
+        if(!smscode.equals(object.toString())) {
         	result.setMessage("短信验证码不匹配！");
             result.setSuccess(false);
             return result;
@@ -1347,7 +1351,7 @@ public class SysUserController {
             result.setSuccess(false);
             return result;
         }
-        if(!smscode.equals(object)) {
+        if(!smscode.equals(object.toString())) {
             result.setMessage("短信验证码不匹配！");
             result.setSuccess(false);
             return result;
@@ -1361,5 +1365,21 @@ public class SysUserController {
         return Result.ok("手机号设置成功!");
     }
 
-    
+
+    /**
+     * 根据对象里面的属性值作in查询 属性可能会变 用户组件用到
+     * @param sysUser
+     * @return
+     */
+    @GetMapping("/getMultiUser")
+    public List<SysUser> getMultiUser(SysUser sysUser){
+        QueryWrapper<SysUser> queryWrapper = QueryGenerator.initQueryWrapper(sysUser, null);
+        List<SysUser> ls = this.sysUserService.list(queryWrapper);
+        for(SysUser user: ls){
+            user.setPassword(null);
+            user.setSalt(null);
+        }
+        return ls;
+    }
+
 }

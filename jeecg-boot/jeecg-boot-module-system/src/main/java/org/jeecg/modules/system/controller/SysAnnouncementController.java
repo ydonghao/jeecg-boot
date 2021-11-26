@@ -26,6 +26,7 @@ import org.jeecg.modules.system.service.ISysAnnouncementSendService;
 import org.jeecg.modules.system.service.ISysAnnouncementService;
 import org.jeecg.modules.system.service.impl.ThirdAppDingtalkServiceImpl;
 import org.jeecg.modules.system.service.impl.ThirdAppWechatEnterpriseServiceImpl;
+import org.jeecg.modules.system.util.XSSUtils;
 import org.jeecgframework.poi.excel.ExcelImportUtil;
 import org.jeecgframework.poi.excel.def.NormalExcelConstants;
 import org.jeecgframework.poi.excel.entity.ExportParams;
@@ -119,6 +120,10 @@ public class SysAnnouncementController {
 	public Result<SysAnnouncement> add(@RequestBody SysAnnouncement sysAnnouncement) {
 		Result<SysAnnouncement> result = new Result<SysAnnouncement>();
 		try {
+			// update-begin-author:liusq date:20210804 for:标题处理xss攻击的问题
+			String title = XSSUtils.striptXSS(sysAnnouncement.getTitile());
+			sysAnnouncement.setTitile(title);
+			// update-end-author:liusq date:20210804 for:标题处理xss攻击的问题
 			sysAnnouncement.setDelFlag(CommonConstant.DEL_FLAG_0.toString());
 			sysAnnouncement.setSendStatus(CommonSendStatus.UNPUBLISHED_STATUS_0);//未发布
 			sysAnnouncementService.saveAnnouncement(sysAnnouncement);
@@ -135,13 +140,17 @@ public class SysAnnouncementController {
 	 * @param sysAnnouncement
 	 * @return
 	 */
-	@RequestMapping(value = "/edit", method = RequestMethod.PUT)
+	@RequestMapping(value = "/edit", method = {RequestMethod.PUT,RequestMethod.POST})
 	public Result<SysAnnouncement> eidt(@RequestBody SysAnnouncement sysAnnouncement) {
 		Result<SysAnnouncement> result = new Result<SysAnnouncement>();
 		SysAnnouncement sysAnnouncementEntity = sysAnnouncementService.getById(sysAnnouncement.getId());
 		if(sysAnnouncementEntity==null) {
 			result.error500("未找到对应实体");
 		}else {
+			// update-begin-author:liusq date:20210804 for:标题处理xss攻击的问题
+			String title = XSSUtils.striptXSS(sysAnnouncement.getTitile());
+			sysAnnouncement.setTitile(title);
+			// update-end-author:liusq date:20210804 for:标题处理xss攻击的问题
 			boolean ok = sysAnnouncementService.upDateAnnouncement(sysAnnouncement);
 			//TODO 返回false说明什么？
 			if(ok) {
@@ -305,7 +314,7 @@ public class SysAnnouncementController {
 	 * @return
 	 */
 	@RequestMapping(value = "/listByUser", method = RequestMethod.GET)
-	public Result<Map<String,Object>> listByUser() {
+	public Result<Map<String, Object>> listByUser(@RequestParam(required = false, defaultValue = "5") Integer pageSize) {
 		Result<Map<String,Object>> result = new Result<Map<String,Object>>();
 		LoginUser sysUser = (LoginUser)SecurityUtils.getSubject().getPrincipal();
 		String userId = sysUser.getId();
@@ -338,9 +347,9 @@ public class SysAnnouncementController {
 			}
 		}
 		// 2.查询用户未读的系统消息
-		Page<SysAnnouncement> anntMsgList = new Page<SysAnnouncement>(0,5);
+		Page<SysAnnouncement> anntMsgList = new Page<SysAnnouncement>(0, pageSize);
 		anntMsgList = sysAnnouncementService.querySysCementPageByUserId(anntMsgList,userId,"1");//通知公告消息
-		Page<SysAnnouncement> sysMsgList = new Page<SysAnnouncement>(0,5);
+		Page<SysAnnouncement> sysMsgList = new Page<SysAnnouncement>(0, pageSize);
 		sysMsgList = sysAnnouncementService.querySysCementPageByUserId(sysMsgList,userId,"2");//系统消息
 		Map<String,Object> sysMsgMap = new HashMap<String, Object>();
 		sysMsgMap.put("sysMsgList", sysMsgList.getRecords());
